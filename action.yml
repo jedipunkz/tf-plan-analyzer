@@ -1,0 +1,23 @@
+name: 'Terraform Plan Inspector'
+description: 'Analyze Terraform plan diffs and output structured information'
+inputs:
+  terraform-plan:
+    description: 'Terraform plan output to analyze'
+    required: true
+  ignore-resources:
+    description: 'JSON array of resource types to ignore (e.g. ["null_resource", "local_file"])'
+    required: false
+    default: '[]'
+outputs:
+  diff:
+    description: 'Whether there are any diffs (true/false)'
+  all-diffs:
+    description: 'JSON string containing all diffs found'
+  resources:
+    description: 'JSON array of Terraform resource names that have changes'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+branding:
+  icon: 'search'
+  color: 'purple'
