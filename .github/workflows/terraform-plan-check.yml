@@ -37,7 +37,7 @@ jobs:
 
     - name: Analyze Terraform Plan
       id: analyze
-      uses: ./
+      uses: jedipunkz/tf-plan-inspector@v1
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
         ignore-resources: '["null_resource.ignored_resource"]'
