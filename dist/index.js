@@ -18808,6 +18808,46 @@ class TerraformPlanParser {
     }
     return diffs;
   }
+  parseFiltered(planOutput) {
+    const diffs = this.parse(planOutput);
+    const filteredOutput = this.filterPlanOutput(planOutput);
+    return { diffs, filteredOutput };
+  }
+  filterPlanOutput(planOutput) {
+    const lines = planOutput.split(`
+`);
+    const filteredLines = [];
+    let skipResource = false;
+    let currentResourceAddress = "";
+    for (let i = 0;i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      const resourceMatch = trimmedLine.match(/^#\s+(.+?)\s+will be (created|updated|destroyed|replaced)/);
+      if (resourceMatch) {
+        const address = resourceMatch[1];
+        const resourceType = this.extractResourceType(address);
+        if (this.shouldIgnoreResource(resourceType, address)) {
+          skipResource = true;
+          currentResourceAddress = address;
+          continue;
+        } else {
+          skipResource = false;
+          currentResourceAddress = "";
+        }
+      }
+      if (skipResource) {
+        if (trimmedLine === "" || trimmedLine.startsWith("#") && !trimmedLine.includes(currentResourceAddress)) {
+          skipResource = false;
+          currentResourceAddress = "";
+        } else {
+          continue;
+        }
+      }
+      filteredLines.push(line);
+    }
+    return filteredLines.join(`
+`);
+  }
   isResourceLine(line) {
     return line.includes("will be created") || line.includes("will be updated") || line.includes("will be destroyed") || line.includes("must be replaced");
   }
@@ -18887,12 +18927,12 @@ async function run() {
     }
     core.info(`Analyzing Terraform plan with ignore list: ${ignoreResources.join(", ")}`);
     const parser = new TerraformPlanParser(ignoreResources);
-    const diffs = parser.parse(terraformPlan);
+    const { diffs, filteredOutput } = parser.parseFiltered(terraformPlan);
     const result = {
       diff: diffs.length > 0,
       allDiffs: diffs,
       resources: [...new Set(diffs.map((d) => d.address))],
-      rawDiffs: terraformPlan
+      rawDiffs: filteredOutput
     };
     core.info(`Found ${diffs.length} diffs affecting ${result.resources.length} resources`);
     core.setOutput("diff-bool", result.diff.toString());

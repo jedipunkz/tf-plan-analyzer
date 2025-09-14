@@ -28,6 +28,55 @@ export class TerraformPlanParser {
     return diffs;
   }
 
+  parseFiltered(planOutput: string): { diffs: TerraformDiff[], filteredOutput: string } {
+    const diffs = this.parse(planOutput);
+    const filteredOutput = this.filterPlanOutput(planOutput);
+    return { diffs, filteredOutput };
+  }
+
+  private filterPlanOutput(planOutput: string): string {
+    const lines = planOutput.split('\n');
+    const filteredLines: string[] = [];
+    let skipResource = false;
+    let currentResourceAddress = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // Check if this is a resource declaration line
+      const resourceMatch = trimmedLine.match(/^#\s+(.+?)\s+will be (created|updated|destroyed|replaced)/);
+      if (resourceMatch) {
+        const address = resourceMatch[1];
+        const resourceType = this.extractResourceType(address);
+
+        if (this.shouldIgnoreResource(resourceType, address)) {
+          skipResource = true;
+          currentResourceAddress = address;
+          continue; // Skip this line
+        } else {
+          skipResource = false;
+          currentResourceAddress = '';
+        }
+      }
+
+      // Skip lines that are part of an ignored resource block
+      if (skipResource) {
+        // Check if we've reached the end of the resource block
+        if (trimmedLine === '' || (trimmedLine.startsWith('#') && !trimmedLine.includes(currentResourceAddress))) {
+          skipResource = false;
+          currentResourceAddress = '';
+        } else {
+          continue; // Skip this line
+        }
+      }
+
+      filteredLines.push(line);
+    }
+
+    return filteredLines.join('\n');
+  }
+
   private isResourceLine(line: string): boolean {
     // Only match resource declaration lines with action descriptions
     return line.includes('will be created') ||

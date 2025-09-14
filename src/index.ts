@@ -24,14 +24,14 @@ async function run(): Promise<void> {
 
     // Parse the Terraform plan
     const parser = new TerraformPlanParser(ignoreResources);
-    const diffs = parser.parse(terraformPlan);
+    const { diffs, filteredOutput } = parser.parseFiltered(terraformPlan);
 
     // Generate analysis result
     const result: AnalysisResult = {
       diff: diffs.length > 0,
       allDiffs: diffs,
       resources: [...new Set(diffs.map(d => d.address))], // Unique resource addresses
-      rawDiffs: terraformPlan,
+      rawDiffs: filteredOutput,
     };
 
     core.info(`Found ${diffs.length} diffs affecting ${result.resources.length} resources`);
