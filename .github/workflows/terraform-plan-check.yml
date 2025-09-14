@@ -40,13 +40,15 @@ jobs:
       uses: ./
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
-        # ignore-resources: '["null_resource"]'
+        ignore-resources: '["null_resource.ignored_resource"]'
 
     - name: Display Results
       run: |
         echo "Has diff: ${{ steps.analyze.outputs.diff }}"
         echo "Resources changed: ${{ steps.analyze.outputs.resources }}"
         echo "All diffs: ${{ steps.analyze.outputs.all-diffs }}"
+        echo "Raw diffs:"
+        echo "${{ steps.analyze.outputs.raw-diffs }}"
 
     - name: Comment on PR (if PR)
       if: github.event_name == 'pull_request'

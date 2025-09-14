@@ -20,7 +20,7 @@ export class TerraformPlanParser {
       }
 
       const diff = this.parseLine(line, lines, i);
-      if (diff && !this.shouldIgnoreResource(diff.resource)) {
+      if (diff && !this.shouldIgnoreResource(diff.resource, diff.address)) {
         diffs.push(diff);
       }
     }
@@ -96,7 +96,17 @@ export class TerraformPlanParser {
     return /^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*(\[.+\])?$/.test(address.trim());
   }
 
-  private shouldIgnoreResource(resourceType: string): boolean {
-    return this.ignoreResources.includes(resourceType);
+  private shouldIgnoreResource(resourceType: string, resourceAddress: string): boolean {
+    // Check if we should ignore by resource type (e.g., "null_resource")
+    if (this.ignoreResources.includes(resourceType)) {
+      return true;
+    }
+
+    // Check if we should ignore by specific resource address (e.g., "null_resource.main")
+    if (this.ignoreResources.includes(resourceAddress)) {
+      return true;
+    }
+
+    return false;
   }
 }

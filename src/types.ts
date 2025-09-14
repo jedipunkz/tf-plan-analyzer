@@ -12,4 +12,5 @@ export interface AnalysisResult {
   diff: boolean;
   allDiffs: TerraformDiff[];
   resources: string[];
+  rawDiffs: string;
 }

@@ -18802,7 +18802,7 @@ class TerraformPlanParser {
         continue;
       }
       const diff = this.parseLine(line, lines, i);
-      if (diff && !this.shouldIgnoreResource(diff.resource)) {
+      if (diff && !this.shouldIgnoreResource(diff.resource, diff.address)) {
         diffs.push(diff);
       }
     }
@@ -18859,8 +18859,14 @@ class TerraformPlanParser {
   isValidResourceAddress(address) {
     return /^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*(\[.+\])?$/.test(address.trim());
   }
-  shouldIgnoreResource(resourceType) {
-    return this.ignoreResources.includes(resourceType);
+  shouldIgnoreResource(resourceType, resourceAddress) {
+    if (this.ignoreResources.includes(resourceType)) {
+      return true;
+    }
+    if (this.ignoreResources.includes(resourceAddress)) {
+      return true;
+    }
+    return false;
   }
 }
 
@@ -18885,12 +18891,14 @@ async function run() {
     const result = {
       diff: diffs.length > 0,
       allDiffs: diffs,
-      resources: [...new Set(diffs.map((d) => d.address))]
+      resources: [...new Set(diffs.map((d) => d.address))],
+      rawDiffs: terraformPlan
     };
     core.info(`Found ${diffs.length} diffs affecting ${result.resources.length} resources`);
     core.setOutput("diff", result.diff.toString());
     core.setOutput("all-diffs", JSON.stringify(result.allDiffs));
     core.setOutput("resources", JSON.stringify(result.resources));
+    core.setOutput("raw-diffs", result.rawDiffs);
     if (result.diff) {
       core.info("Changes detected:");
       for (const diff of result.allDiffs) {

@@ -31,6 +31,7 @@ async function run(): Promise<void> {
       diff: diffs.length > 0,
       allDiffs: diffs,
       resources: [...new Set(diffs.map(d => d.address))], // Unique resource addresses
+      rawDiffs: terraformPlan,
     };
 
     core.info(`Found ${diffs.length} diffs affecting ${result.resources.length} resources`);
@@ -39,6 +40,7 @@ async function run(): Promise<void> {
     core.setOutput('diff', result.diff.toString());
     core.setOutput('all-diffs', JSON.stringify(result.allDiffs));
     core.setOutput('resources', JSON.stringify(result.resources));
+    core.setOutput('raw-diffs', result.rawDiffs);
 
     // Log summary
     if (result.diff) {
