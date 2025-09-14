@@ -18819,6 +18819,7 @@ class TerraformPlanParser {
     const filteredLines = [];
     let skipResource = false;
     let currentResourceAddress = "";
+    let ignoredCount = 0;
     for (let i = 0;i < lines.length; i++) {
       const line = lines[i];
       const trimmedLine = line.trim();
@@ -18829,6 +18830,7 @@ class TerraformPlanParser {
         if (this.shouldIgnoreResource(resourceType, address)) {
           skipResource = true;
           currentResourceAddress = address;
+          ignoredCount++;
           continue;
         } else {
           skipResource = false;
@@ -18842,6 +18844,14 @@ class TerraformPlanParser {
         } else {
           continue;
         }
+      }
+      const planMatch = trimmedLine.match(/^Plan:\s+(\d+)\s+to\s+add,\s+(\d+)\s+to\s+change,\s+(\d+)\s+to\s+destroy\./);
+      if (planMatch) {
+        const [, add, change, destroy] = planMatch;
+        const newAdd = Math.max(0, parseInt(add) - ignoredCount);
+        const adjustedLine = line.replace(/Plan:\s+\d+\s+to\s+add,\s+\d+\s+to\s+change,\s+\d+\s+to\s+destroy\./, `Plan: ${newAdd} to add, ${change} to change, ${destroy} to destroy.`);
+        filteredLines.push(adjustedLine);
+        continue;
       }
       filteredLines.push(line);
     }
