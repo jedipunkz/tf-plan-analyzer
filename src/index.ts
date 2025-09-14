@@ -37,10 +37,10 @@ async function run(): Promise<void> {
     core.info(`Found ${diffs.length} diffs affecting ${result.resources.length} resources`);
 
     // Set outputs
-    core.setOutput('diff', result.diff.toString());
-    core.setOutput('all-diffs', JSON.stringify(result.allDiffs));
-    core.setOutput('resources', JSON.stringify(result.resources));
-    core.setOutput('raw-diffs', result.rawDiffs);
+    core.setOutput('diff-bool', result.diff.toString());
+    core.setOutput('diff-resources', JSON.stringify(result.resources));
+    core.setOutput('diff-raw', result.rawDiffs);
+    core.setOutput('diff-count', result.resources.length.toString());
 
     // Log summary
     if (result.diff) {

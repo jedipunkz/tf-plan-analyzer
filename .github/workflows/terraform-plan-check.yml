@@ -44,37 +44,30 @@ jobs:
 
     - name: Display Results
       run: |
-        echo "Has diff: ${{ steps.analyze.outputs.diff }}"
-        echo "Resources changed: ${{ steps.analyze.outputs.resources }}"
-        echo "All diffs: ${{ steps.analyze.outputs.all-diffs }}"
-        echo "Raw diffs:"
-        echo "${{ steps.analyze.outputs.raw-diffs }}"
+        echo "Diff bool: ${{ steps.analyze.outputs.diff-bool }}"
+        echo "Diff count: ${{ steps.analyze.outputs.diff-count }}"
+        echo "Diff resources: ${{ steps.analyze.outputs.diff-resources }}"
+        echo "Diff raw:"
+        echo "${{ steps.analyze.outputs.diff-raw }}"
 
     - name: Comment on PR (if PR)
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
       with:
         script: |
-          const diff = '${{ steps.analyze.outputs.diff }}';
-          const resources = JSON.parse('${{ steps.analyze.outputs.resources }}');
-          const allDiffs = JSON.parse('${{ steps.analyze.outputs.all-diffs }}');
+          const diffBool = '${{ steps.analyze.outputs.diff-bool }}';
+          const diffCount = '${{ steps.analyze.outputs.diff-count }}';
+          const resources = JSON.parse('${{ steps.analyze.outputs.diff-resources }}');
 
           let body = '## Terraform Plan Analysis\n\n';
 
-          if (diff === 'true') {
-            body += `✅ **Changes detected** affecting ${resources.length} resources:\n\n`;
-
-            for (const diffItem of allDiffs) {
-              const action = diffItem.action;
-              const actionEmoji = {
-                'create': '➕',
-                'update': '🔄',
-                'delete': '🗑️',
-                'replace': '🔄'
-              }[action] || '❓';
-
-              body += `${actionEmoji} **${action.toUpperCase()}**: \`${diffItem.address}\` (${diffItem.resource})\n`;
+          if (diffBool === 'true') {
+            body += `✅ **Changes detected** affecting ${diffCount} resources:\n\n`;
+            body += '```\n';
+            for (const resource of resources) {
+              body += `${resource}\n`;
             }
+            body += '```\n';
           } else {
             body += '✅ **No changes detected**';
           }

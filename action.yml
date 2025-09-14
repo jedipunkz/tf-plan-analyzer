@@ -9,14 +9,14 @@ inputs:
     required: false
     default: '[]'
 outputs:
-  diff:
+  diff-bool:
     description: 'Whether there are any diffs (true/false)'
-  all-diffs:
-    description: 'JSON string containing all diffs found'
-  resources:
-    description: 'JSON array of Terraform resource names that have changes'
-  raw-diffs:
+  diff-resources:
+    description: 'JSON array of Terraform resource addresses that have changes'
+  diff-raw:
     description: 'Raw Terraform plan output as provided to the action'
+  diff-count:
+    description: 'Number of resources that have changes'
 runs:
   using: 'node20'
   main: 'dist/index.js'
