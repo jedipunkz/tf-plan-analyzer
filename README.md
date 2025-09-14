@@ -41,49 +41,47 @@ ignore-resources: '["null_resource", "aws_s3_bucket.temp", "local_file"]'
 
 ## Usage
 
-### Basic Usage
-
 ```yaml
-- name: Analyze Terraform Plan
-  id: analyze
-  uses: ./
-  with:
-    terraform-plan: ${{ steps.plan.outputs.stdout }}
-    ignore-resources: '["null_resource"]'
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
 
-- name: Check if changes exist
-  if: steps.analyze.outputs.diff-bool == 'true'
-  run: echo "Found ${{ steps.analyze.outputs.diff-count }} resource changes"
-```
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
 
-### Advanced Usage
+    - name: Terraform Init
+      run: terraform init
 
-```yaml
-- name: Process each changed resource
-  if: steps.analyze.outputs.diff-bool == 'true'
-  run: |
-    resources='${{ steps.analyze.outputs.diff-resources }}'
-    echo "Processing ${{ steps.analyze.outputs.diff-count }} resources:"
-    echo $resources | jq -r '.[]' | while read resource; do
-      echo "- $resource"
-    done
+    - name: Terraform Plan
+      id: plan
+      run: terraform plan -no-color
 
-- name: Display filtered plan
-  run: |
-    echo "Filtered Terraform Plan:"
-    echo "${{ steps.analyze.outputs.diff-raw }}"
-```
+    - name: Analyze Plan
+      id: analyze
+      uses: jedipunkz/tf-plan-inspector@v1
+      with:
+        terraform-plan: ${{ steps.plan.outputs.stdout }}
+        ignore-resources: '["null_resource"]'
 
-### Conditional Workflows
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const diffBool = '${{ steps.analyze.outputs.diff-bool }}';
+          const diffCount = '${{ steps.analyze.outputs.diff-count }}';
 
-```yaml
-- name: Skip deployment if no important changes
-  if: steps.analyze.outputs.diff-bool == 'false'
-  run: echo "No infrastructure changes detected, skipping deployment"
-
-- name: Require approval for many changes
-  if: steps.analyze.outputs.diff-count > '10'
-  uses: ./.github/actions/require-approval
+          if (diffBool === 'true') {
+            const body = `## Terraform Plan Analysis\n\n✅ **${diffCount} resources will be changed**`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+          }
 ```
 
 
