@@ -40,7 +40,8 @@ jobs:
       uses: jedipunkz/tf-plan-analyzer@v1
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
-        ignore-resources: '["null_resource.ignored_resource"]'
+        #ignore-resources: '["local_file.example","null_resource.example","null_resource.ignored_resource","random_string.example"]'
+        ignore-resources: '["local_file.example","null_resource""random_string.example"]'
 
     - name: Display Results
       run: |
