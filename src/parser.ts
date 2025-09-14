@@ -29,15 +29,8 @@ export class TerraformPlanParser {
   }
 
   private isResourceLine(line: string): boolean {
-    // Terraform plan output patterns
-    const patterns = [
-      /^[#~+-]\s+/, // Action symbols
-      /^Terraform will perform the following actions:/,
-      /^Plan:/,
-    ];
-
-    return patterns.some(pattern => pattern.test(line)) ||
-           line.includes('will be created') ||
+    // Only match resource declaration lines with action descriptions
+    return line.includes('will be created') ||
            line.includes('will be updated') ||
            line.includes('will be destroyed') ||
            line.includes('must be replaced');
@@ -68,16 +61,6 @@ export class TerraformPlanParser {
     const replaceMatch = line.match(/^[+]?\/-\s+(.+?)\s+(must be replaced|will be replaced)/);
     if (replaceMatch) {
       return this.createDiff('replace', replaceMatch[1]);
-    }
-
-    // Parse action symbols at the beginning
-    const actionMatch = line.match(/^([#~+-])\s+(.+?)(\s|$)/);
-    if (actionMatch) {
-      const [, symbol, address] = actionMatch;
-      const action = this.getActionFromSymbol(symbol);
-      if (action && this.isValidResourceAddress(address)) {
-        return this.createDiff(action, address);
-      }
     }
 
     return null;

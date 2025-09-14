@@ -3,13 +3,18 @@ name: Terraform Plan Analysis
 on:
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened ]
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   terraform-plan:
     name: Analyze Terraform Plan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
     - name: Checkout code
@@ -18,20 +23,8 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: 1.6.0
+        terraform_version: 1.9.8
 
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v1
-      with:
-        bun-version: latest
-
-    - name: Install dependencies
-      run: bun install
-      working-directory: .
-
-    - name: Build action
-      run: bun run build
-      working-directory: .
 
     - name: Terraform Init
       run: terraform init
@@ -39,10 +32,7 @@ jobs:
 
     - name: Terraform Plan
       id: plan
-      run: |
-        terraform plan -no-color -out=tfplan.out
-        terraform show -no-color tfplan.out > plan.txt
-        cat plan.txt
+      run: terraform plan -no-color
       working-directory: ./example/terraform
 
     - name: Analyze Terraform Plan
@@ -50,7 +40,7 @@ jobs:
       uses: ./
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
-        ignore-resources: '["null_resource"]'
+        # ignore-resources: '["null_resource"]'
 
     - name: Display Results
       run: |
