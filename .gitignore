@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Build output
+dist/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.staging
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Terraform files
+example/terraform/.terraform/
+example/terraform/.terraform.lock.hcl
+example/terraform/terraform.tfstate*
+example/terraform/tfplan.out
+example/terraform/plan.txt
+example/terraform/hello.txt
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
