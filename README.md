@@ -14,7 +14,7 @@ A GitHub Action to parse Terraform plan diffs and provide structured output for 
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `terraform-plan` | Terraform plan output to analyze | Yes | - |
+| `terraform-plan` | Terraform plan output to parse | Yes | - |
 | `ignore-resources` | JSON array of resource types or specific resources to ignore | No | `[]` |
 
 ### Ignore Resources Examples
@@ -74,7 +74,7 @@ jobs:
           const diffCount = '${{ steps.parse.outputs.diff-count }}';
 
           if (diffBool === 'true') {
-            const body = `## Terraform Plan Analysis\n\n✅ **${diffCount} resources will be changed**`;
+            > const body = `## Terraform Plan Parse\n\n✅ **${diffCount} resources will be changed**`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,

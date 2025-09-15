@@ -2,7 +2,7 @@ name: 'Terraform Plan Parser'
 description: 'Parse Terraform plan diffs and output structured information'
 inputs:
   terraform-plan:
-    description: 'Terraform plan output to analyze'
+    description: 'Terraform plan output to parse'
     required: true
   ignore-resources:
     description: 'JSON array of resource types or specific resources to ignore (e.g. ["null_resource", "null_resource.main", "local_file"])'
