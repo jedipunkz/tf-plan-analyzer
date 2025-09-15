@@ -10,7 +10,7 @@ on:
 
 jobs:
   terraform-plan:
-    name: Analyze Terraform Plan
+    name: Parse Terraform Plan
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,7 +35,7 @@ jobs:
       run: terraform plan -no-color
       working-directory: ./example/terraform
 
-    - name: Analyze Terraform Plan
+    - name: Parse Terraform Plan
       id: parse
       uses: jedipunkz/tf-plan-parser@v1
       with:
