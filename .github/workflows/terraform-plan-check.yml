@@ -48,9 +48,9 @@ jobs:
         echo "Diff count: ${{ steps.parse.outputs.diff-count }}"
         echo "Diff resources: ${{ steps.parse.outputs.diff-resources }}"
         echo "Diff JSON:"
-        echo "${{ steps.parse.outputs.diff-json }}"
+        echo '${{ steps.parse.outputs.diff-json }}'
         echo "Diff raw:"
-        echo "${{ steps.parse.outputs.diff-raw }}"
+        echo '${{ steps.parse.outputs.diff-raw }}'
 
     - name: Comment on PR (if PR)
       if: github.event_name == 'pull_request'
@@ -61,6 +61,7 @@ jobs:
           const diffCount = '${{ steps.parse.outputs.diff-count }}';
           const resources = JSON.parse('${{ steps.parse.outputs.diff-resources }}');
           const diffRaw = `${{ steps.parse.outputs.diff-raw }}`;
+          const diffJson = JSON.parse(`${{ steps.parse.outputs.diff-json }}`);
 
           let body = '## Terraform Plan Analysis\n\n';
 
@@ -80,7 +81,8 @@ jobs:
           body += '### Outputs\n';
           body += `- **diff-bool**: \`${diffBool}\`\n`;
           body += `- **diff-count**: \`${diffCount}\`\n`;
-          body += `- **diff-resources**: \`${JSON.stringify(resources)}\`\n\n`;
+          body += `- **diff-resources**: \`${JSON.stringify(resources)}\`\n`;
+          body += `- **Plan Summary**: ${diffJson.summary.toAdd} to add, ${diffJson.summary.toChange} to change, ${diffJson.summary.toDestroy} to destroy\n\n`;
 
           // Raw plan
           if (diffRaw && diffRaw.trim()) {
