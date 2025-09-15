@@ -10,7 +10,7 @@ on:
 
 jobs:
   terraform-plan:
-    name: Analyze Terraform Plan
+    name: Parse Terraform Plan
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,8 +35,8 @@ jobs:
       run: terraform plan -no-color
       working-directory: ./example/terraform
 
-    - name: Analyze Terraform Plan
-      id: analyze
+    - name: Parse Terraform Plan
+      id: parse
       uses: jedipunkz/tf-plan-parser@v1
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
@@ -44,21 +44,21 @@ jobs:
 
     - name: Display Results
       run: |
-        echo "Diff bool: ${{ steps.analyze.outputs.diff-bool }}"
-        echo "Diff count: ${{ steps.analyze.outputs.diff-count }}"
-        echo "Diff resources: ${{ steps.analyze.outputs.diff-resources }}"
+        echo "Diff bool: ${{ steps.parse.outputs.diff-bool }}"
+        echo "Diff count: ${{ steps.parse.outputs.diff-count }}"
+        echo "Diff resources: ${{ steps.parse.outputs.diff-resources }}"
         echo "Diff raw:"
-        echo "${{ steps.analyze.outputs.diff-raw }}"
+        echo "${{ steps.parse.outputs.diff-raw }}"
 
     - name: Comment on PR (if PR)
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
       with:
         script: |
-          const diffBool = '${{ steps.analyze.outputs.diff-bool }}';
-          const diffCount = '${{ steps.analyze.outputs.diff-count }}';
-          const resources = JSON.parse('${{ steps.analyze.outputs.diff-resources }}');
-          const diffRaw = `${{ steps.analyze.outputs.diff-raw }}`;
+          const diffBool = '${{ steps.parse.outputs.diff-bool }}';
+          const diffCount = '${{ steps.parse.outputs.diff-count }}';
+          const resources = JSON.parse('${{ steps.parse.outputs.diff-resources }}');
+          const diffRaw = `${{ steps.parse.outputs.diff-raw }}`;
 
           let body = '## Terraform Plan Analysis\n\n';
 
