@@ -35,22 +35,7 @@ export class TerraformPlanParser {
   }
 
   parsePlanSummary(planOutput: string): TerraformPlanSummary {
-    const planMatch = planOutput.match(/Plan:\s+(\d+)\s+to\s+add,\s+(\d+)\s+to\s+change,\s+(\d+)\s+to\s+destroy\./);
-
-    if (planMatch) {
-      const toAdd = parseInt(planMatch[1], 10);
-      const toChange = parseInt(planMatch[2], 10);
-      const toDestroy = parseInt(planMatch[3], 10);
-
-      return {
-        totalChanges: toAdd + toChange + toDestroy,
-        toAdd,
-        toChange,
-        toDestroy
-      };
-    }
-
-    // If no plan summary found, calculate from diffs
+    // Always calculate from diffs to ensure ignore-resources is applied
     const diffs = this.parse(planOutput);
     const toAdd = diffs.filter(d => d.action === 'create').length;
     const toChange = diffs.filter(d => d.action === 'update').length;
@@ -69,10 +54,6 @@ export class TerraformPlanParser {
     const resources: ResourceDiff[] = [];
 
     for (const diff of diffs) {
-      if (this.shouldIgnoreResource(diff.resource, diff.address)) {
-        continue;
-      }
-
       const resourceDiff: ResourceDiff = {
         address: diff.address,
         resourceType: diff.resource,
