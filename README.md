@@ -58,8 +58,8 @@ jobs:
       id: plan
       run: terraform plan -no-color
 
-    - name: Analyze Plan
-      id: analyze
+    - name: Parse Plan
+      id: parse
       uses: jedipunkz/tf-plan-parser@v1
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
@@ -70,8 +70,8 @@ jobs:
       uses: actions/github-script@v7
       with:
         script: |
-          const diffBool = '${{ steps.analyze.outputs.diff-bool }}';
-          const diffCount = '${{ steps.analyze.outputs.diff-count }}';
+          const diffBool = '${{ steps.parse.outputs.diff-bool }}';
+          const diffCount = '${{ steps.parse.outputs.diff-count }}';
 
           if (diffBool === 'true') {
             const body = `## Terraform Plan Analysis\n\n✅ **${diffCount} resources will be changed**`;
