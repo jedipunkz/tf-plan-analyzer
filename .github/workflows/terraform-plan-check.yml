@@ -37,7 +37,7 @@ jobs:
 
     - name: Parse Terraform Plan
       id: parse
-      uses: jedipunkz/tf-plan-parser@v1
+      uses: ./
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
         ignore-resources: '["null_resource.ignored_resource"]'
@@ -47,6 +47,8 @@ jobs:
         echo "Diff bool: ${{ steps.parse.outputs.diff-bool }}"
         echo "Diff count: ${{ steps.parse.outputs.diff-count }}"
         echo "Diff resources: ${{ steps.parse.outputs.diff-resources }}"
+        echo "Diff JSON:"
+        echo "${{ steps.parse.outputs.diff-json }}"
         echo "Diff raw:"
         echo "${{ steps.parse.outputs.diff-raw }}"
 

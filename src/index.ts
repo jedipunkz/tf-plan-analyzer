@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import { TerraformPlanParser } from './parser';
-import { AnalysisResult } from './types';
+import { AnalysisResult, DetailedAnalysisResult } from './types';
 
 async function run(): Promise<void> {
   try {
@@ -25,6 +25,7 @@ async function run(): Promise<void> {
     // Parse the Terraform plan
     const parser = new TerraformPlanParser(ignoreResources);
     const { diffs, filteredOutput } = parser.parseFiltered(terraformPlan);
+    const summary = parser.parsePlanSummary(terraformPlan);
 
     // Generate analysis result
     const result: AnalysisResult = {
@@ -34,6 +35,18 @@ async function run(): Promise<void> {
       rawDiffs: filteredOutput,
     };
 
+    // Generate detailed JSON result
+    const detailedResult: DetailedAnalysisResult = {
+      hasDiffs: result.diff,
+      summary,
+      diffs: result.allDiffs,
+      uniqueResources: result.resources,
+      resourceCount: result.resources.length,
+      rawOutput: terraformPlan,
+      filteredOutput: result.rawDiffs,
+      timestamp: new Date().toISOString()
+    };
+
     core.info(`Found ${diffs.length} diffs affecting ${result.resources.length} resources`);
 
     // Set outputs
@@ -41,6 +54,7 @@ async function run(): Promise<void> {
     core.setOutput('diff-resources', JSON.stringify(result.resources));
     core.setOutput('diff-raw', result.rawDiffs);
     core.setOutput('diff-count', result.resources.length.toString());
+    core.setOutput('diff-json', JSON.stringify(detailedResult, null, 2));
 
     // Log summary
     if (result.diff) {

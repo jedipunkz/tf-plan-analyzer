@@ -1,4 +1,4 @@
-import { TerraformDiff } from './types';
+import { TerraformDiff, TerraformPlanSummary } from './types';
 
 export class TerraformPlanParser {
   private ignoreResources: string[];
@@ -32,6 +32,36 @@ export class TerraformPlanParser {
     const diffs = this.parse(planOutput);
     const filteredOutput = this.filterPlanOutput(planOutput);
     return { diffs, filteredOutput };
+  }
+
+  parsePlanSummary(planOutput: string): TerraformPlanSummary {
+    const planMatch = planOutput.match(/Plan:\s+(\d+)\s+to\s+add,\s+(\d+)\s+to\s+change,\s+(\d+)\s+to\s+destroy\./);
+
+    if (planMatch) {
+      const toAdd = parseInt(planMatch[1], 10);
+      const toChange = parseInt(planMatch[2], 10);
+      const toDestroy = parseInt(planMatch[3], 10);
+
+      return {
+        totalChanges: toAdd + toChange + toDestroy,
+        toAdd,
+        toChange,
+        toDestroy
+      };
+    }
+
+    // If no plan summary found, calculate from diffs
+    const diffs = this.parse(planOutput);
+    const toAdd = diffs.filter(d => d.action === 'create').length;
+    const toChange = diffs.filter(d => d.action === 'update').length;
+    const toDestroy = diffs.filter(d => d.action === 'delete' || d.action === 'replace').length;
+
+    return {
+      totalChanges: toAdd + toChange + toDestroy,
+      toAdd,
+      toChange,
+      toDestroy
+    };
   }
 
   private filterPlanOutput(planOutput: string): string {
