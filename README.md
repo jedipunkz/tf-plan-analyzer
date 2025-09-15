@@ -48,7 +48,7 @@ The `diff-json` output provides a comprehensive, structured view of the Terrafor
 {
   "hasDiffs": true,
   "summary": {
-    "totalChanges": 4,
+    "totalChanges": 3,
     "toAdd": 3,
     "toChange": 1,
     "toDestroy": 0
@@ -85,10 +85,15 @@ The `diff-json` output provides a comprehensive, structured view of the Terrafor
 You can extract specific values from the JSON structure using `jq`:
 
 ```yaml
-- name: Extract total changes
-  run: |
-    TOTAL_CHANGES=$(echo '${{ steps.parse.outputs.diff-json }}' | jq -r '.summary.totalChanges')
-    echo "Total changes: $TOTAL_CHANGES"
+    - name: Extract total changes
+      run: |
+        DIFF_JSON='${{ steps.parse.outputs.diff-json }}'
+        if [ -n "$DIFF_JSON" ] && [ "$DIFF_JSON" != "null" ]; then
+          TOTAL_CHANGES=$(echo "$DIFF_JSON" | jq -r '.summary.totalChanges // 0')
+        else
+          TOTAL_CHANGES=0
+        fi
+        echo "Total changes: $TOTAL_CHANGES"
 ```
 
 ## Usage
@@ -166,7 +171,7 @@ jobs:
 
     - name: Parse Terraform Plan
       id: parse
-      uses: jedipunkz/tf-plan-parser@v1
+      uses: jedipunkz/tf-plan-parser@v1.0.6
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
         ignore-resources: '["null_resource.ignored_resource"]'
