@@ -1,6 +1,6 @@
-# Terraform Plan Analyzer
+# Terraform Plan Parser
 
-A GitHub Action to analyze Terraform plan diffs and provide structured output for CI/CD workflows.
+A GitHub Action to parse Terraform plan diffs and provide structured output for CI/CD workflows.
 
 ## Features
 
@@ -60,7 +60,7 @@ jobs:
 
     - name: Analyze Plan
       id: analyze
-      uses: jedipunkz/tf-plan-analyzer@v1
+      uses: jedipunkz/tf-plan-parser@v1
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
         ignore-resources: '["null_resource"]'
