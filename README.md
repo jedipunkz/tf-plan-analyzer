@@ -171,7 +171,7 @@ jobs:
 
     - name: Parse Terraform Plan
       id: parse
-      uses: jedipunkz/tf-plan-parser@v1.0.6
+      uses: jedipunkz/tf-plan-parser@v1
       with:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
         ignore-resources: '["null_resource.ignored_resource"]'
