@@ -68,7 +68,7 @@ jobs:
         echo "to-destroy=$TO_DESTROY" >> $GITHUB_OUTPUT
         echo "resource-count=$RESOURCE_COUNT" >> $GITHUB_OUTPUT
 
-    - name: Comment on PR (if PR)
+    - name: Comment on PR
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
       env:
@@ -78,9 +78,6 @@ jobs:
           const diffBool = '${{ steps.parse.outputs.diff-bool }}';
           const diffCount = '${{ steps.parse.outputs.diff-count }}';
           const resources = JSON.parse('${{ steps.parse.outputs.diff-resources }}');
-          const diffRaw = `${{ steps.parse.outputs.diff-raw }}`;
-
-          // jq extracted values
           const totalChanges = '${{ steps.extract-jq.outputs.total-changes }}';
           const toAdd = '${{ steps.extract-jq.outputs.to-add }}';
           const toChange = '${{ steps.extract-jq.outputs.to-change }}';
@@ -97,7 +94,6 @@ jobs:
 
           let body = `## Terraform Plan Analysis (${totalChanges} total changes via jq)\n\n`;
 
-          // Summary
           if (diffBool === 'true') {
             body += `✅ **Changes detected** affecting ${diffCount} resources:\n\n`;
 
@@ -107,6 +103,23 @@ jobs:
               body += `${resource}\n`;
             }
             body += '```\n\n';
+
+            // Plan Summary
+            body += `**Plan Summary**: ${toAdd} to add, ${toChange} to change, ${toDestroy} to destroy\n\n`;
+
+            // Detailed resource changes from diff-json
+            body += '### Detailed Resource Changes\n';
+            for (const resource of diffJson.resources) {
+              const actionEmoji = {
+                'create': '➕',
+                'update': '🔄',
+                'delete': '❌',
+                'replace': '🔄'
+              }[resource.action] || '🔄';
+
+              body += `${actionEmoji} **${resource.action.toUpperCase()}**: \`${resource.address}\` (${resource.resourceType})\n`;
+              body += `   - ${resource.changes.description}\n\n`;
+            }
           } else {
             body += '✅ **No changes detected**\n\n';
           }
@@ -153,6 +166,7 @@ jobs:
           body += '\n```\n\n';
 
           // Raw plan
+          const diffRaw = `${{ steps.parse.outputs.diff-raw }}`;
           if (diffRaw && diffRaw.trim()) {
             body += '### Raw Terraform Plan Output\n';
             body += '```\n' + diffRaw + '\n```\n\n';
