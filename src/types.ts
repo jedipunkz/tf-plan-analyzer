@@ -5,6 +5,18 @@ export interface TerraformDiff {
   changes?: {
     before?: any;
     after?: any;
+    description?: string;
+  };
+}
+
+export interface ResourceDiff {
+  address: string;
+  resourceType: string;
+  action: 'create' | 'update' | 'delete' | 'replace';
+  changes: {
+    before: any;
+    after: any;
+    description: string;
   };
 }
 
@@ -13,4 +25,19 @@ export interface AnalysisResult {
   allDiffs: TerraformDiff[];
   resources: string[];
   rawDiffs: string;
+}
+
+export interface TerraformPlanSummary {
+  totalChanges: number;
+  toAdd: number;
+  toChange: number;
+  toDestroy: number;
+}
+
+export interface DetailedAnalysisResult {
+  hasDiffs: boolean;
+  summary: TerraformPlanSummary;
+  resources: ResourceDiff[];
+  resourceCount: number;
+  timestamp: string;
 }
