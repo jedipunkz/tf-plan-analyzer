@@ -18984,7 +18984,8 @@ async function run() {
     core.setOutput("diff-resources", JSON.stringify(result.resources));
     core.setOutput("diff-raw", result.rawDiffs);
     core.setOutput("diff-count", result.resources.length.toString());
-    core.setOutput("diff-json", JSON.stringify(detailedResult, null, 2));
+    const jsonOutput = JSON.stringify(detailedResult, null, 2).replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
+    core.setOutput("diff-json", jsonOutput);
     if (result.diff) {
       core.info("Changes detected:");
       for (const diff of result.allDiffs) {

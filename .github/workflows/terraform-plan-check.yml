@@ -61,9 +61,18 @@ jobs:
           const diffCount = '${{ steps.parse.outputs.diff-count }}';
           const resources = JSON.parse('${{ steps.parse.outputs.diff-resources }}');
           const diffRaw = `${{ steps.parse.outputs.diff-raw }}`;
-          const diffJson = JSON.parse(`${{ steps.parse.outputs.diff-json }}`);
+
+          let diffJson;
+          try {
+            diffJson = JSON.parse(process.env.DIFF_JSON);
+          } catch (e) {
+            console.log('Failed to parse diff-json:', e);
+            diffJson = { summary: { toAdd: 0, toChange: 0, toDestroy: 0 } };
+          }
 
           let body = '## Terraform Plan Analysis\n\n';
+        env:
+          DIFF_JSON: ${{ steps.parse.outputs.diff-json }}
 
           // Summary
           if (diffBool === 'true') {
