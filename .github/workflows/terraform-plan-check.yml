@@ -52,6 +52,22 @@ jobs:
         echo "Diff raw:"
         echo '${{ steps.parse.outputs.diff-raw }}'
 
+    - name: Extract values with jq
+      id: extract-jq
+      run: |
+        DIFF_JSON='${{ steps.parse.outputs.diff-json }}'
+        TOTAL_CHANGES=$(echo "$DIFF_JSON" | jq -r '.summary.totalChanges')
+        TO_ADD=$(echo "$DIFF_JSON" | jq -r '.summary.toAdd')
+        TO_CHANGE=$(echo "$DIFF_JSON" | jq -r '.summary.toChange')
+        TO_DESTROY=$(echo "$DIFF_JSON" | jq -r '.summary.toDestroy')
+        RESOURCE_COUNT=$(echo "$DIFF_JSON" | jq -r '.resourceCount')
+
+        echo "total-changes=$TOTAL_CHANGES" >> $GITHUB_OUTPUT
+        echo "to-add=$TO_ADD" >> $GITHUB_OUTPUT
+        echo "to-change=$TO_CHANGE" >> $GITHUB_OUTPUT
+        echo "to-destroy=$TO_DESTROY" >> $GITHUB_OUTPUT
+        echo "resource-count=$RESOURCE_COUNT" >> $GITHUB_OUTPUT
+
     - name: Comment on PR (if PR)
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
@@ -64,20 +80,28 @@ jobs:
           const resources = JSON.parse('${{ steps.parse.outputs.diff-resources }}');
           const diffRaw = `${{ steps.parse.outputs.diff-raw }}`;
 
+          // jq extracted values
+          const totalChanges = '${{ steps.extract-jq.outputs.total-changes }}';
+          const toAdd = '${{ steps.extract-jq.outputs.to-add }}';
+          const toChange = '${{ steps.extract-jq.outputs.to-change }}';
+          const toDestroy = '${{ steps.extract-jq.outputs.to-destroy }}';
+          const resourceCount = '${{ steps.extract-jq.outputs.resource-count }}';
+
           let diffJson;
           try {
             diffJson = JSON.parse(process.env.DIFF_JSON);
           } catch (e) {
             console.log('Failed to parse diff-json:', e);
-            diffJson = { summary: { toAdd: 0, toChange: 0, toDestroy: 0 } };
+            diffJson = { summary: { toAdd: 0, toChange: 0, toDestroy: 0, totalChanges: 0 }, resources: [] };
           }
 
-          let body = '## Terraform Plan Analysis\n\n';
+          let body = `## Terraform Plan Analysis (${totalChanges} total changes via jq)\n\n`;
 
           // Summary
           if (diffBool === 'true') {
             body += `✅ **Changes detected** affecting ${diffCount} resources:\n\n`;
-            body += `**Plan Summary**: ${diffJson.summary.toAdd} to add, ${diffJson.summary.toChange} to change, ${diffJson.summary.toDestroy} to destroy\n\n`;
+            body += `**Plan Summary (jq parsed)**: Total ${totalChanges} changes - ${toAdd} to add, ${toChange} to change, ${toDestroy} to destroy\n\n`;
+            body += `**Resource Count (jq parsed)**: ${resourceCount} resources affected\n\n`;
 
             // Detailed resource changes from diff-json
             body += '### Resource Changes\n';
