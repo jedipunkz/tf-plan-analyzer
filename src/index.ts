@@ -26,6 +26,7 @@ async function run(): Promise<void> {
     const parser = new TerraformPlanParser(ignoreResources);
     const { diffs, filteredOutput } = parser.parseFiltered(terraformPlan);
     const summary = parser.parsePlanSummary(terraformPlan);
+    const detailedResources = parser.parseDetailedResources(terraformPlan);
 
     // Generate analysis result
     const result: AnalysisResult = {
@@ -39,11 +40,8 @@ async function run(): Promise<void> {
     const detailedResult: DetailedAnalysisResult = {
       hasDiffs: result.diff,
       summary,
-      diffs: result.allDiffs,
-      uniqueResources: result.resources,
-      resourceCount: result.resources.length,
-      rawOutput: terraformPlan,
-      filteredOutput: result.rawDiffs,
+      resources: detailedResources,
+      resourceCount: detailedResources.length,
       timestamp: new Date().toISOString()
     };
 
@@ -54,11 +52,8 @@ async function run(): Promise<void> {
     core.setOutput('diff-resources', JSON.stringify(result.resources));
     core.setOutput('diff-raw', result.rawDiffs);
     core.setOutput('diff-count', result.resources.length.toString());
-    // Escape control characters for GitHub Actions compatibility
-    const jsonOutput = JSON.stringify(detailedResult, null, 2)
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r')
-      .replace(/\t/g, '\\t');
+    // Create compact JSON output without pretty printing to avoid GitHub Actions issues
+    const jsonOutput = JSON.stringify(detailedResult);
 
     core.setOutput('diff-json', jsonOutput);
 

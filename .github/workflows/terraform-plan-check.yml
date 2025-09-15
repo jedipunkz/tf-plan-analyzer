@@ -77,21 +77,37 @@ jobs:
           // Summary
           if (diffBool === 'true') {
             body += `✅ **Changes detected** affecting ${diffCount} resources:\n\n`;
-            body += '### Changed Resources\n```\n';
-            for (const resource of resources) {
-              body += `${resource}\n`;
+            body += `**Plan Summary**: ${diffJson.summary.toAdd} to add, ${diffJson.summary.toChange} to change, ${diffJson.summary.toDestroy} to destroy\n\n`;
+
+            // Detailed resource changes from diff-json
+            body += '### Resource Changes\n';
+            for (const resource of diffJson.resources) {
+              const actionEmoji = {
+                'create': '➕',
+                'update': '🔄',
+                'delete': '❌',
+                'replace': '🔄'
+              }[resource.action] || '🔄';
+
+              body += `${actionEmoji} **${resource.action.toUpperCase()}**: \`${resource.address}\` (${resource.resourceType})\n`;
+              body += `   - ${resource.changes.description}\n`;
+              if (resource.changes.before !== null) {
+                body += `   - Before: \`${resource.changes.before}\`\n`;
+              }
+              if (resource.changes.after !== null) {
+                body += `   - After: \`${resource.changes.after}\`\n`;
+              }
+              body += '\n';
             }
-            body += '```\n\n';
           } else {
             body += '✅ **No changes detected**\n\n';
           }
 
-          // All outputs
-          body += '### Outputs\n';
-          body += `- **diff-bool**: \`${diffBool}\`\n`;
-          body += `- **diff-count**: \`${diffCount}\`\n`;
-          body += `- **diff-resources**: \`${JSON.stringify(resources)}\`\n`;
-          body += `- **Plan Summary**: ${diffJson.summary.toAdd} to add, ${diffJson.summary.toChange} to change, ${diffJson.summary.toDestroy} to destroy\n\n`;
+          // Detailed JSON structure
+          body += '### Detailed Analysis (JSON)\n';
+          body += '```json\n';
+          body += JSON.stringify(diffJson, null, 2);
+          body += '\n```\n\n';
 
           // Raw plan
           if (diffRaw && diffRaw.trim()) {

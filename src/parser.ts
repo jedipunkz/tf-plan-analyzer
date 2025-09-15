@@ -1,4 +1,4 @@
-import { TerraformDiff, TerraformPlanSummary } from './types';
+import { TerraformDiff, TerraformPlanSummary, ResourceDiff } from './types';
 
 export class TerraformPlanParser {
   private ignoreResources: string[];
@@ -62,6 +62,47 @@ export class TerraformPlanParser {
       toChange,
       toDestroy
     };
+  }
+
+  parseDetailedResources(planOutput: string): ResourceDiff[] {
+    const diffs = this.parse(planOutput);
+    const resources: ResourceDiff[] = [];
+
+    for (const diff of diffs) {
+      if (this.shouldIgnoreResource(diff.resource, diff.address)) {
+        continue;
+      }
+
+      const resourceDiff: ResourceDiff = {
+        address: diff.address,
+        resourceType: diff.resource,
+        action: diff.action,
+        changes: {
+          before: diff.action === 'create' ? null : 'Value will be known after apply',
+          after: diff.action === 'delete' ? null : 'Value will be known after apply',
+          description: this.getActionDescription(diff.action)
+        }
+      };
+
+      resources.push(resourceDiff);
+    }
+
+    return resources;
+  }
+
+  private getActionDescription(action: string): string {
+    switch (action) {
+      case 'create':
+        return 'Resource will be created';
+      case 'update':
+        return 'Resource will be updated in-place';
+      case 'delete':
+        return 'Resource will be destroyed';
+      case 'replace':
+        return 'Resource will be destroyed and recreated';
+      default:
+        return 'No changes';
+    }
   }
 
   private filterPlanOutput(planOutput: string): string {

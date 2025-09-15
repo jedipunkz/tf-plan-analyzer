@@ -18837,6 +18837,41 @@ class TerraformPlanParser {
       toDestroy
     };
   }
+  parseDetailedResources(planOutput) {
+    const diffs = this.parse(planOutput);
+    const resources = [];
+    for (const diff of diffs) {
+      if (this.shouldIgnoreResource(diff.resource, diff.address)) {
+        continue;
+      }
+      const resourceDiff = {
+        address: diff.address,
+        resourceType: diff.resource,
+        action: diff.action,
+        changes: {
+          before: diff.action === "create" ? null : "Value will be known after apply",
+          after: diff.action === "delete" ? null : "Value will be known after apply",
+          description: this.getActionDescription(diff.action)
+        }
+      };
+      resources.push(resourceDiff);
+    }
+    return resources;
+  }
+  getActionDescription(action) {
+    switch (action) {
+      case "create":
+        return "Resource will be created";
+      case "update":
+        return "Resource will be updated in-place";
+      case "delete":
+        return "Resource will be destroyed";
+      case "replace":
+        return "Resource will be destroyed and recreated";
+      default:
+        return "No changes";
+    }
+  }
   filterPlanOutput(planOutput) {
     const lines = planOutput.split(`
 `);
@@ -18963,6 +18998,7 @@ async function run() {
     const parser = new TerraformPlanParser(ignoreResources);
     const { diffs, filteredOutput } = parser.parseFiltered(terraformPlan);
     const summary = parser.parsePlanSummary(terraformPlan);
+    const detailedResources = parser.parseDetailedResources(terraformPlan);
     const result = {
       diff: diffs.length > 0,
       allDiffs: diffs,
@@ -18972,11 +19008,8 @@ async function run() {
     const detailedResult = {
       hasDiffs: result.diff,
       summary,
-      diffs: result.allDiffs,
-      uniqueResources: result.resources,
-      resourceCount: result.resources.length,
-      rawOutput: terraformPlan,
-      filteredOutput: result.rawDiffs,
+      resources: detailedResources,
+      resourceCount: detailedResources.length,
       timestamp: new Date().toISOString()
     };
     core.info(`Found ${diffs.length} diffs affecting ${result.resources.length} resources`);
@@ -18984,7 +19017,7 @@ async function run() {
     core.setOutput("diff-resources", JSON.stringify(result.resources));
     core.setOutput("diff-raw", result.rawDiffs);
     core.setOutput("diff-count", result.resources.length.toString());
-    const jsonOutput = JSON.stringify(detailedResult, null, 2).replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
+    const jsonOutput = JSON.stringify(detailedResult);
     core.setOutput("diff-json", jsonOutput);
     if (result.diff) {
       core.info("Changes detected:");
