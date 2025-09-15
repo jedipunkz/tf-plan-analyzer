@@ -17,6 +17,8 @@ outputs:
     description: 'Raw Terraform plan output as provided to the action'
   diff-count:
     description: 'Number of resources that have changes'
+  diff-json:
+    description: 'Complete analysis result as JSON including all diff details and structured plan data'
 runs:
   using: 'node20'
   main: 'dist/index.js'

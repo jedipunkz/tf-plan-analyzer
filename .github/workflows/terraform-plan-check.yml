@@ -42,6 +42,16 @@ jobs:
         terraform-plan: ${{ steps.plan.outputs.stdout }}
         ignore-resources: '["null_resource.ignored_resource"]'
 
+    - name: Display Results
+      run: |
+        echo "Diff bool: ${{ steps.parse.outputs.diff-bool }}"
+        echo "Diff count: ${{ steps.parse.outputs.diff-count }}"
+        echo "Diff resources: ${{ steps.parse.outputs.diff-resources }}"
+        echo "Diff JSON:"
+        echo '${{ steps.parse.outputs.diff-json }}'
+        echo "Diff raw:"
+        echo '${{ steps.parse.outputs.diff-raw }}'
+
     - name: Extract values with jq
       id: extract-jq
       run: |
@@ -72,13 +82,14 @@ jobs:
           const toAdd = '${{ steps.extract-jq.outputs.to-add }}';
           const toChange = '${{ steps.extract-jq.outputs.to-change }}';
           const toDestroy = '${{ steps.extract-jq.outputs.to-destroy }}';
+          const resourceCount = '${{ steps.extract-jq.outputs.resource-count }}';
 
           let diffJson;
           try {
             diffJson = JSON.parse(process.env.DIFF_JSON);
           } catch (e) {
             console.log('Failed to parse diff-json:', e);
-            diffJson = { resources: [] };
+            diffJson = { summary: { toAdd: 0, toChange: 0, toDestroy: 0, totalChanges: 0 }, resources: [] };
           }
 
           let body = `## Terraform Plan Analysis (${totalChanges} total changes via jq)\n\n`;
