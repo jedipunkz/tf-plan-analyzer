@@ -80,22 +80,6 @@ The `diff-json` output provides a comprehensive, structured view of the Terrafor
 }
 ```
 
-### Using diff-json with jq
-
-You can extract specific values from the JSON structure using `jq`:
-
-```yaml
-    - name: Extract total changes
-      run: |
-        DIFF_JSON='${{ steps.parse.outputs.diff-json }}'
-        if [ -n "$DIFF_JSON" ] && [ "$DIFF_JSON" != "null" ]; then
-          TOTAL_CHANGES=$(echo "$DIFF_JSON" | jq -r '.summary.totalChanges // 0')
-        else
-          TOTAL_CHANGES=0
-        fi
-        echo "Total changes: $TOTAL_CHANGES"
-```
-
 ## Usage
 
 ### Basic Usage
@@ -129,6 +113,22 @@ jobs:
         echo "Changes detected: ${{ steps.parse.outputs.diff-bool }}"
         echo "Resources affected: ${{ steps.parse.outputs.diff-count }}"
         echo "Resources: ${{ steps.parse.outputs.diff-resources }}"
+```
+
+### Using diff-json with jq
+
+You can extract specific values from the JSON structure using `jq`:
+
+```yaml
+    - name: Extract total changes
+      run: |
+        DIFF_JSON='${{ steps.parse.outputs.diff-json }}'
+        if [ -n "$DIFF_JSON" ] && [ "$DIFF_JSON" != "null" ]; then
+          TOTAL_CHANGES=$(echo "$DIFF_JSON" | jq -r '.summary.totalChanges // 0')
+        else
+          TOTAL_CHANGES=0
+        fi
+        echo "Total changes: $TOTAL_CHANGES"
 ```
 
 ### Advanced Usage with diff-json and PR Comments
