@@ -1,7 +1,7 @@
 {
-  "name": "terraform-plan-inspector",
+  "name": "terraform-plan-parser",
   "version": "1.0.0",
-  "description": "GitHub Action to analyze Terraform plan diffs",
+  "description": "GitHub Action to parse Terraform plan diffs",
   "main": "dist/index.js",
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --format cjs",

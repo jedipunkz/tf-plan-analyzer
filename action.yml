@@ -1,5 +1,5 @@
-name: 'Terraform Plan Inspector'
-description: 'Analyze Terraform plan diffs and output structured information'
+name: 'Terraform Plan Parser'
+description: 'Parse Terraform plan diffs and output structured information'
 inputs:
   terraform-plan:
     description: 'Terraform plan output to analyze'
