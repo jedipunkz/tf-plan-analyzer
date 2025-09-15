@@ -3,7 +3,7 @@ node_modules/
 bun.lockb
 
 # Build output
-dist/
+# dist/ - Keep dist/ for GitHub Actions distribution
 
 # TypeScript
 *.tsbuildinfo
