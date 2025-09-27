@@ -44,12 +44,35 @@ jobs:
 
     - name: Display Results
       run: |
+        echo "=== Overall Diff Outputs ==="
         echo "Diff bool: ${{ steps.parse.outputs.diff-bool }}"
         echo "Diff count: ${{ steps.parse.outputs.diff-count }}"
         echo "Diff resources: ${{ steps.parse.outputs.diff-resources }}"
-        echo "Diff JSON:"
+        echo ""
+        echo "=== Create Outputs ==="
+        echo "Create bool: ${{ steps.parse.outputs.create-bool }}"
+        echo "Create count: ${{ steps.parse.outputs.create-count }}"
+        echo "Create resources: ${{ steps.parse.outputs.create-resources }}"
+        echo ""
+        echo "=== Destroy Outputs ==="
+        echo "Destroy bool: ${{ steps.parse.outputs.destroy-bool }}"
+        echo "Destroy count: ${{ steps.parse.outputs.destroy-count }}"
+        echo "Destroy resources: ${{ steps.parse.outputs.destroy-resources }}"
+        echo ""
+        echo "=== Update Outputs ==="
+        echo "Update bool: ${{ steps.parse.outputs.update-bool }}"
+        echo "Update count: ${{ steps.parse.outputs.update-count }}"
+        echo "Update resources: ${{ steps.parse.outputs.update-resources }}"
+        echo ""
+        echo "=== Replace Outputs ==="
+        echo "Replace bool: ${{ steps.parse.outputs.replace-bool }}"
+        echo "Replace count: ${{ steps.parse.outputs.replace-count }}"
+        echo "Replace resources: ${{ steps.parse.outputs.replace-resources }}"
+        echo ""
+        echo "=== JSON Output ==="
         echo '${{ steps.parse.outputs.diff-json }}'
-        echo "Diff raw:"
+        echo ""
+        echo "=== Raw Output ==="
         echo '${{ steps.parse.outputs.diff-raw }}'
 
     - name: Extract values with jq
@@ -84,6 +107,20 @@ jobs:
           const toDestroy = '${{ steps.extract-jq.outputs.to-destroy }}';
           const resourceCount = '${{ steps.extract-jq.outputs.resource-count }}';
 
+          // New action-specific outputs
+          const createBool = '${{ steps.parse.outputs.create-bool }}';
+          const createCount = '${{ steps.parse.outputs.create-count }}';
+          const createResources = JSON.parse('${{ steps.parse.outputs.create-resources }}' || '[]');
+          const destroyBool = '${{ steps.parse.outputs.destroy-bool }}';
+          const destroyCount = '${{ steps.parse.outputs.destroy-count }}';
+          const destroyResources = JSON.parse('${{ steps.parse.outputs.destroy-resources }}' || '[]');
+          const updateBool = '${{ steps.parse.outputs.update-bool }}';
+          const updateCount = '${{ steps.parse.outputs.update-count }}';
+          const updateResources = JSON.parse('${{ steps.parse.outputs.update-resources }}' || '[]');
+          const replaceBool = '${{ steps.parse.outputs.replace-bool }}';
+          const replaceCount = '${{ steps.parse.outputs.replace-count }}';
+          const replaceResources = JSON.parse('${{ steps.parse.outputs.replace-resources }}' || '[]');
+
           let diffJson;
           try {
             diffJson = JSON.parse(process.env.DIFF_JSON);
@@ -96,6 +133,22 @@ jobs:
 
           if (diffBool === 'true') {
             body += `✅ **Changes detected** affecting ${diffCount} resources:\n\n`;
+
+            // Action-specific summary
+            body += '### Summary by Action\n';
+            if (createBool === 'true') {
+              body += `- ➕ **Create**: ${createCount} resource(s)\n`;
+            }
+            if (updateBool === 'true') {
+              body += `- 🔄 **Update**: ${updateCount} resource(s)\n`;
+            }
+            if (replaceBool === 'true') {
+              body += `- 🔄 **Replace**: ${replaceCount} resource(s)\n`;
+            }
+            if (destroyBool === 'true') {
+              body += `- ❌ **Destroy**: ${destroyCount} resource(s)\n`;
+            }
+            body += '\n';
 
             // Original Changed Resources section
             body += '### Changed Resources\n```\n';
@@ -124,11 +177,15 @@ jobs:
             body += '✅ **No changes detected**\n\n';
           }
 
-          // Original Outputs section
+          // Original Outputs section with new outputs
           body += '### Outputs\n';
           body += `- **diff-bool**: \`${diffBool}\`\n`;
           body += `- **diff-count**: \`${diffCount}\`\n`;
           body += `- **diff-resources**: \`${JSON.stringify(resources)}\`\n`;
+          body += `- **create-bool**: \`${createBool}\`, **create-count**: \`${createCount}\`, **create-resources**: \`${JSON.stringify(createResources)}\`\n`;
+          body += `- **destroy-bool**: \`${destroyBool}\`, **destroy-count**: \`${destroyCount}\`, **destroy-resources**: \`${JSON.stringify(destroyResources)}\`\n`;
+          body += `- **update-bool**: \`${updateBool}\`, **update-count**: \`${updateCount}\`, **update-resources**: \`${JSON.stringify(updateResources)}\`\n`;
+          body += `- **replace-bool**: \`${replaceBool}\`, **replace-count**: \`${replaceCount}\`, **replace-resources**: \`${JSON.stringify(replaceResources)}\`\n`;
           body += `- **Plan Summary**: ${diffJson.summary.toAdd} to add, ${diffJson.summary.toChange} to change, ${diffJson.summary.toDestroy} to destroy\n\n`;
 
           // JSON structure analysis section
