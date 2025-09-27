@@ -18,7 +18,31 @@ outputs:
   diff-count:
     description: 'Number of resources that have changes'
   diff-json:
-    description: 'Complete analysis result as JSON including all diff details and structured plan data'
+    description: 'Complete parse result as JSON including all diff details and structured plan data'
+  create-bool:
+    description: 'Whether there are any resources to be created (true/false)'
+  create-count:
+    description: 'Number of resources to be created'
+  create-resources:
+    description: 'JSON array of resource addresses to be created'
+  destroy-bool:
+    description: 'Whether there are any resources to be destroyed (true/false)'
+  destroy-count:
+    description: 'Number of resources to be destroyed'
+  destroy-resources:
+    description: 'JSON array of resource addresses to be destroyed'
+  update-bool:
+    description: 'Whether there are any resources to be updated (true/false)'
+  update-count:
+    description: 'Number of resources to be updated'
+  update-resources:
+    description: 'JSON array of resource addresses to be updated'
+  replace-bool:
+    description: 'Whether there are any resources to be replaced (true/false)'
+  replace-count:
+    description: 'Number of resources to be replaced'
+  replace-resources:
+    description: 'JSON array of resource addresses to be replaced'
 runs:
   using: 'node20'
   main: 'dist/index.js'

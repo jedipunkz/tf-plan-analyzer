@@ -1,4 +1,6 @@
 import { TerraformDiff, TerraformPlanSummary, ResourceDiff } from './types';
+import { TERRAFORM_ACTIONS, ACTION_DESCRIPTIONS } from './constants';
+import { extractResourceType } from './utils';
 
 export class TerraformPlanParser {
   private ignoreResources: string[];
@@ -37,9 +39,11 @@ export class TerraformPlanParser {
   parsePlanSummary(planOutput: string): TerraformPlanSummary {
     // Always calculate from diffs to ensure ignore-resources is applied
     const diffs = this.parse(planOutput);
-    const toAdd = diffs.filter(d => d.action === 'create').length;
-    const toChange = diffs.filter(d => d.action === 'update').length;
-    const toDestroy = diffs.filter(d => d.action === 'delete' || d.action === 'replace').length;
+    const toAdd = diffs.filter(d => d.action === TERRAFORM_ACTIONS.CREATE).length;
+    const toChange = diffs.filter(d => d.action === TERRAFORM_ACTIONS.UPDATE).length;
+    const toDestroy = diffs.filter(d =>
+      d.action === TERRAFORM_ACTIONS.DELETE || d.action === TERRAFORM_ACTIONS.REPLACE
+    ).length;
 
     return {
       totalChanges: toAdd + toChange + toDestroy,
@@ -57,11 +61,11 @@ export class TerraformPlanParser {
       const resourceDiff: ResourceDiff = {
         address: diff.address,
         resourceType: diff.resource,
-        action: diff.action,
+        action: diff.action as Exclude<typeof diff.action, 'no-op'>,
         changes: {
-          before: diff.action === 'create' ? null : 'Value will be known after apply',
-          after: diff.action === 'delete' ? null : 'Value will be known after apply',
-          description: this.getActionDescription(diff.action)
+          before: diff.action === TERRAFORM_ACTIONS.CREATE ? null : 'Value will be known after apply',
+          after: diff.action === TERRAFORM_ACTIONS.DELETE ? null : 'Value will be known after apply',
+          description: ACTION_DESCRIPTIONS[diff.action]
         }
       };
 
@@ -71,20 +75,6 @@ export class TerraformPlanParser {
     return resources;
   }
 
-  private getActionDescription(action: string): string {
-    switch (action) {
-      case 'create':
-        return 'Resource will be created';
-      case 'update':
-        return 'Resource will be updated in-place';
-      case 'delete':
-        return 'Resource will be destroyed';
-      case 'replace':
-        return 'Resource will be destroyed and recreated';
-      default:
-        return 'No changes';
-    }
-  }
 
   private filterPlanOutput(planOutput: string): string {
     const lines = planOutput.split('\n');
@@ -101,7 +91,7 @@ export class TerraformPlanParser {
       const resourceMatch = trimmedLine.match(/^#\s+(.+?)\s+will be (created|updated|destroyed|replaced)/);
       if (resourceMatch) {
         const address = resourceMatch[1];
-        const resourceType = this.extractResourceType(address);
+        const resourceType = extractResourceType(address);
 
         if (this.shouldIgnoreResource(resourceType, address)) {
           skipResource = true;
@@ -158,32 +148,32 @@ export class TerraformPlanParser {
     // Format: "# resource_type.resource_name will be created"
     const createMatch = line.match(/^#\s+(.+?)\s+will be created/);
     if (createMatch) {
-      return this.createDiff('create', createMatch[1]);
+      return this.createDiff(TERRAFORM_ACTIONS.CREATE, createMatch[1]);
     }
 
     // Format: "~ resource_type.resource_name will be updated in-place"
     const updateMatch = line.match(/^~\s+(.+?)\s+will be updated/);
     if (updateMatch) {
-      return this.createDiff('update', updateMatch[1]);
+      return this.createDiff(TERRAFORM_ACTIONS.UPDATE, updateMatch[1]);
     }
 
     // Format: "- resource_type.resource_name will be destroyed"
     const destroyMatch = line.match(/^-\s+(.+?)\s+will be destroyed/);
     if (destroyMatch) {
-      return this.createDiff('delete', destroyMatch[1]);
+      return this.createDiff(TERRAFORM_ACTIONS.DELETE, destroyMatch[1]);
     }
 
     // Format: "+/- resource_type.resource_name must be replaced"
     const replaceMatch = line.match(/^[+]?\/-\s+(.+?)\s+(must be replaced|will be replaced)/);
     if (replaceMatch) {
-      return this.createDiff('replace', replaceMatch[1]);
+      return this.createDiff(TERRAFORM_ACTIONS.REPLACE, replaceMatch[1]);
     }
 
     return null;
   }
 
   private createDiff(action: TerraformDiff['action'], address: string): TerraformDiff {
-    const resourceType = this.extractResourceType(address);
+    const resourceType = extractResourceType(address);
     return {
       action,
       resource: resourceType,
@@ -191,26 +181,6 @@ export class TerraformPlanParser {
     };
   }
 
-  private getActionFromSymbol(symbol: string): TerraformDiff['action'] | null {
-    switch (symbol) {
-      case '+': return 'create';
-      case '~': return 'update';
-      case '-': return 'delete';
-      case '#': return 'create'; // Sometimes used for create
-      default: return null;
-    }
-  }
-
-  private extractResourceType(address: string): string {
-    // Extract resource type from address like "aws_instance.example" -> "aws_instance"
-    const match = address.match(/^([^.]+)/);
-    return match ? match[1] : address;
-  }
-
-  private isValidResourceAddress(address: string): boolean {
-    // Basic validation for Terraform resource addresses
-    return /^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*(\[.+\])?$/.test(address.trim());
-  }
 
   private shouldIgnoreResource(resourceType: string, resourceAddress: string): boolean {
     // Check if we should ignore by resource type (e.g., "null_resource")

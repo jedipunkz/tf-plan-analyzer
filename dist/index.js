@@ -18786,6 +18786,49 @@ var require_core = __commonJS((exports2) => {
 // src/index.ts
 var core = __toESM(require_core());
 
+// src/constants.ts
+var TERRAFORM_ACTIONS = {
+  CREATE: "create",
+  UPDATE: "update",
+  DELETE: "delete",
+  REPLACE: "replace",
+  NO_OP: "no-op"
+};
+var ACTION_DESCRIPTIONS = {
+  [TERRAFORM_ACTIONS.CREATE]: "Resource will be created",
+  [TERRAFORM_ACTIONS.UPDATE]: "Resource will be updated in-place",
+  [TERRAFORM_ACTIONS.DELETE]: "Resource will be destroyed",
+  [TERRAFORM_ACTIONS.REPLACE]: "Resource will be destroyed and recreated",
+  [TERRAFORM_ACTIONS.NO_OP]: "No changes"
+};
+var ACTION_EMOJIS = {
+  [TERRAFORM_ACTIONS.CREATE]: "➕",
+  [TERRAFORM_ACTIONS.UPDATE]: "\uD83D\uDD04",
+  [TERRAFORM_ACTIONS.DELETE]: "❌",
+  [TERRAFORM_ACTIONS.REPLACE]: "\uD83D\uDD04"
+};
+
+// src/utils.ts
+function filterDiffsByAction(diffs, action) {
+  return diffs.filter((d) => d.action === action);
+}
+function getUniqueResourceAddresses(diffs) {
+  return [...new Set(diffs.map((d) => d.address))];
+}
+function extractResourceType(address) {
+  const match = address.match(/^([^.]+)/);
+  return match ? match[1] : address;
+}
+function calculateActionMetrics(diffs, action) {
+  const actionDiffs = filterDiffsByAction(diffs, action);
+  const resources = getUniqueResourceAddresses(actionDiffs);
+  return {
+    bool: resources.length > 0,
+    count: resources.length,
+    resources
+  };
+}
+
 // src/parser.ts
 class TerraformPlanParser {
   ignoreResources;
@@ -18815,9 +18858,9 @@ class TerraformPlanParser {
   }
   parsePlanSummary(planOutput) {
     const diffs = this.parse(planOutput);
-    const toAdd = diffs.filter((d) => d.action === "create").length;
-    const toChange = diffs.filter((d) => d.action === "update").length;
-    const toDestroy = diffs.filter((d) => d.action === "delete" || d.action === "replace").length;
+    const toAdd = diffs.filter((d) => d.action === TERRAFORM_ACTIONS.CREATE).length;
+    const toChange = diffs.filter((d) => d.action === TERRAFORM_ACTIONS.UPDATE).length;
+    const toDestroy = diffs.filter((d) => d.action === TERRAFORM_ACTIONS.DELETE || d.action === TERRAFORM_ACTIONS.REPLACE).length;
     return {
       totalChanges: toAdd + toChange + toDestroy,
       toAdd,
@@ -18834,28 +18877,14 @@ class TerraformPlanParser {
         resourceType: diff.resource,
         action: diff.action,
         changes: {
-          before: diff.action === "create" ? null : "Value will be known after apply",
-          after: diff.action === "delete" ? null : "Value will be known after apply",
-          description: this.getActionDescription(diff.action)
+          before: diff.action === TERRAFORM_ACTIONS.CREATE ? null : "Value will be known after apply",
+          after: diff.action === TERRAFORM_ACTIONS.DELETE ? null : "Value will be known after apply",
+          description: ACTION_DESCRIPTIONS[diff.action]
         }
       };
       resources.push(resourceDiff);
     }
     return resources;
-  }
-  getActionDescription(action) {
-    switch (action) {
-      case "create":
-        return "Resource will be created";
-      case "update":
-        return "Resource will be updated in-place";
-      case "delete":
-        return "Resource will be destroyed";
-      case "replace":
-        return "Resource will be destroyed and recreated";
-      default:
-        return "No changes";
-    }
   }
   filterPlanOutput(planOutput) {
     const lines = planOutput.split(`
@@ -18870,7 +18899,7 @@ class TerraformPlanParser {
       const resourceMatch = trimmedLine.match(/^#\s+(.+?)\s+will be (created|updated|destroyed|replaced)/);
       if (resourceMatch) {
         const address = resourceMatch[1];
-        const resourceType = this.extractResourceType(address);
+        const resourceType = extractResourceType(address);
         if (this.shouldIgnoreResource(resourceType, address)) {
           skipResource = true;
           currentResourceAddress = address;
@@ -18908,50 +18937,29 @@ class TerraformPlanParser {
   parseLine(line, lines, index) {
     const createMatch = line.match(/^#\s+(.+?)\s+will be created/);
     if (createMatch) {
-      return this.createDiff("create", createMatch[1]);
+      return this.createDiff(TERRAFORM_ACTIONS.CREATE, createMatch[1]);
     }
     const updateMatch = line.match(/^~\s+(.+?)\s+will be updated/);
     if (updateMatch) {
-      return this.createDiff("update", updateMatch[1]);
+      return this.createDiff(TERRAFORM_ACTIONS.UPDATE, updateMatch[1]);
     }
     const destroyMatch = line.match(/^-\s+(.+?)\s+will be destroyed/);
     if (destroyMatch) {
-      return this.createDiff("delete", destroyMatch[1]);
+      return this.createDiff(TERRAFORM_ACTIONS.DELETE, destroyMatch[1]);
     }
     const replaceMatch = line.match(/^[+]?\/-\s+(.+?)\s+(must be replaced|will be replaced)/);
     if (replaceMatch) {
-      return this.createDiff("replace", replaceMatch[1]);
+      return this.createDiff(TERRAFORM_ACTIONS.REPLACE, replaceMatch[1]);
     }
     return null;
   }
   createDiff(action, address) {
-    const resourceType = this.extractResourceType(address);
+    const resourceType = extractResourceType(address);
     return {
       action,
       resource: resourceType,
       address: address.trim()
     };
-  }
-  getActionFromSymbol(symbol) {
-    switch (symbol) {
-      case "+":
-        return "create";
-      case "~":
-        return "update";
-      case "-":
-        return "delete";
-      case "#":
-        return "create";
-      default:
-        return null;
-    }
-  }
-  extractResourceType(address) {
-    const match = address.match(/^([^.]+)/);
-    return match ? match[1] : address;
-  }
-  isValidResourceAddress(address) {
-    return /^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*(\[.+\])?$/.test(address.trim());
   }
   shouldIgnoreResource(resourceType, resourceAddress) {
     if (this.ignoreResources.includes(resourceType)) {
@@ -18979,15 +18987,16 @@ async function run() {
       core.setFailed(`Invalid ignore-resources format: ${error}`);
       return;
     }
-    core.info(`Analyzing Terraform plan with ignore list: ${ignoreResources.join(", ")}`);
+    core.info(`Parsing Terraform plan with ignore list: ${ignoreResources.join(", ")}`);
     const parser = new TerraformPlanParser(ignoreResources);
     const { diffs, filteredOutput } = parser.parseFiltered(terraformPlan);
     const summary = parser.parsePlanSummary(terraformPlan);
     const detailedResources = parser.parseDetailedResources(terraformPlan);
+    const resources = getUniqueResourceAddresses(diffs);
     const result = {
       diff: diffs.length > 0,
       allDiffs: diffs,
-      resources: [...new Set(diffs.map((d) => d.address))],
+      resources,
       rawDiffs: filteredOutput
     };
     const detailedResult = {
@@ -18997,11 +19006,27 @@ async function run() {
       resourceCount: detailedResources.length,
       timestamp: new Date().toISOString()
     };
+    const createMetrics = calculateActionMetrics(diffs, TERRAFORM_ACTIONS.CREATE);
+    const destroyMetrics = calculateActionMetrics(diffs, TERRAFORM_ACTIONS.DELETE);
+    const updateMetrics = calculateActionMetrics(diffs, TERRAFORM_ACTIONS.UPDATE);
+    const replaceMetrics = calculateActionMetrics(diffs, TERRAFORM_ACTIONS.REPLACE);
     core.info(`Found ${diffs.length} diffs affecting ${result.resources.length} resources`);
     core.setOutput("diff-bool", result.diff.toString());
     core.setOutput("diff-resources", JSON.stringify(result.resources));
     core.setOutput("diff-raw", result.rawDiffs);
     core.setOutput("diff-count", result.resources.length.toString());
+    core.setOutput("create-bool", createMetrics.bool.toString());
+    core.setOutput("create-count", createMetrics.count.toString());
+    core.setOutput("create-resources", JSON.stringify(createMetrics.resources));
+    core.setOutput("destroy-bool", destroyMetrics.bool.toString());
+    core.setOutput("destroy-count", destroyMetrics.count.toString());
+    core.setOutput("destroy-resources", JSON.stringify(destroyMetrics.resources));
+    core.setOutput("update-bool", updateMetrics.bool.toString());
+    core.setOutput("update-count", updateMetrics.count.toString());
+    core.setOutput("update-resources", JSON.stringify(updateMetrics.resources));
+    core.setOutput("replace-bool", replaceMetrics.bool.toString());
+    core.setOutput("replace-count", replaceMetrics.count.toString());
+    core.setOutput("replace-resources", JSON.stringify(replaceMetrics.resources));
     const jsonOutput = JSON.stringify(detailedResult);
     core.setOutput("diff-json", jsonOutput);
     if (result.diff) {

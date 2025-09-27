@@ -39,10 +39,22 @@ ignore-resources: '["null_resource", "aws_s3_bucket.temp", "local_file"]'
 | `diff-resources` | JSON array of Terraform resource addresses with changes | `["aws_instance.web","aws_s3_bucket.assets"]` |
 | `diff-raw` | Raw Terraform plan output with ignored resources filtered out | Full terraform plan text |
 | `diff-json` | structured JSON including detailed resource information | See JSON Structure below |
+| `create-bool` | Whether there are any resources to be created (true/false) | `true` |
+| `create-count` | Number of resources to be created | `2` |
+| `create-resources` | JSON array of resource addresses to be created | `["aws_instance.web","aws_s3_bucket.assets"]` |
+| `destroy-bool` | Whether there are any resources to be destroyed (true/false) | `false` |
+| `destroy-count` | Number of resources to be destroyed | `0` |
+| `destroy-resources` | JSON array of resource addresses to be destroyed | `[]` |
+| `update-bool` | Whether there are any resources to be updated (true/false) | `true` |
+| `update-count` | Number of resources to be updated | `1` |
+| `update-resources` | JSON array of resource addresses to be updated | `["aws_security_group.main"]` |
+| `replace-bool` | Whether there are any resources to be replaced (true/false) | `false` |
+| `replace-count` | Number of resources to be replaced | `0` |
+| `replace-resources` | JSON array of resource addresses to be replaced | `[]` |
 
 ### diff-json Structure
 
-The `diff-json` output provides a comprehensive, structured view of the Terraform plan analysis:
+The `diff-json` output provides a comprehensive, structured view of the Terraform plan parse result:
 
 ```json
 {
@@ -134,7 +146,7 @@ You can extract specific values from the JSON structure using `jq`:
 ### Advanced Usage with diff-json and PR Comments
 
 ```yaml
-name: Terraform Plan Analysis
+name: Terraform Plan Parser
 
 on:
   pull_request:
@@ -215,7 +227,7 @@ jobs:
             diffJson = { resources: [] };
           }
 
-          let body = `## Terraform Plan Analysis (${totalChanges} total changes via jq)\n\n`;
+          let body = `## Terraform Plan Parser Results (${totalChanges} total changes via jq)\n\n`;
 
           if (diffBool === 'true') {
             body += `✅ **Changes detected** affecting ${diffCount} resources:\n\n`;
