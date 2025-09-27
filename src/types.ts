@@ -22,7 +22,7 @@ export interface ResourceDiff {
   };
 }
 
-export interface AnalysisResult {
+export interface ParseResult {
   diff: boolean;
   allDiffs: TerraformDiff[];
   resources: string[];
@@ -36,7 +36,7 @@ export interface TerraformPlanSummary {
   toDestroy: number;
 }
 
-export interface DetailedAnalysisResult {
+export interface DetailedParseResult {
   hasDiffs: boolean;
   summary: TerraformPlanSummary;
   resources: ResourceDiff[];

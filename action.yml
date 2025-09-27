@@ -18,7 +18,7 @@ outputs:
   diff-count:
     description: 'Number of resources that have changes'
   diff-json:
-    description: 'Complete analysis result as JSON including all diff details and structured plan data'
+    description: 'Complete parse result as JSON including all diff details and structured plan data'
   create-bool:
     description: 'Whether there are any resources to be created (true/false)'
   create-count:

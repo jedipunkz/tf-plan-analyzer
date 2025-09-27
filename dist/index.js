@@ -18987,7 +18987,7 @@ async function run() {
       core.setFailed(`Invalid ignore-resources format: ${error}`);
       return;
     }
-    core.info(`Analyzing Terraform plan with ignore list: ${ignoreResources.join(", ")}`);
+    core.info(`Parsing Terraform plan with ignore list: ${ignoreResources.join(", ")}`);
     const parser = new TerraformPlanParser(ignoreResources);
     const { diffs, filteredOutput } = parser.parseFiltered(terraformPlan);
     const summary = parser.parsePlanSummary(terraformPlan);

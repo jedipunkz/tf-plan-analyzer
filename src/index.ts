@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import { TerraformPlanParser } from './parser';
-import { AnalysisResult, DetailedAnalysisResult } from './types';
+import { ParseResult, DetailedParseResult } from './types';
 import { TERRAFORM_ACTIONS } from './constants';
 import { calculateActionMetrics, getUniqueResourceAddresses } from './utils';
 
@@ -22,7 +22,7 @@ async function run(): Promise<void> {
       return;
     }
 
-    core.info(`Analyzing Terraform plan with ignore list: ${ignoreResources.join(', ')}`);
+    core.info(`Parsing Terraform plan with ignore list: ${ignoreResources.join(', ')}`);
 
     // Parse the Terraform plan
     const parser = new TerraformPlanParser(ignoreResources);
@@ -30,9 +30,9 @@ async function run(): Promise<void> {
     const summary = parser.parsePlanSummary(terraformPlan);
     const detailedResources = parser.parseDetailedResources(terraformPlan);
 
-    // Generate analysis result
+    // Generate parse result
     const resources = getUniqueResourceAddresses(diffs);
-    const result: AnalysisResult = {
+    const result: ParseResult = {
       diff: diffs.length > 0,
       allDiffs: diffs,
       resources,
@@ -40,7 +40,7 @@ async function run(): Promise<void> {
     };
 
     // Generate detailed JSON result
-    const detailedResult: DetailedAnalysisResult = {
+    const detailedResult: DetailedParseResult = {
       hasDiffs: result.diff,
       summary,
       resources: detailedResources,

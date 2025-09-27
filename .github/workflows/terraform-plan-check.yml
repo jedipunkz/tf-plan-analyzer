@@ -1,4 +1,4 @@
-name: Terraform Plan Analysis
+name: Terraform Plan Parser
 
 on:
   pull_request:
@@ -129,7 +129,7 @@ jobs:
             diffJson = { summary: { toAdd: 0, toChange: 0, toDestroy: 0, totalChanges: 0 }, resources: [] };
           }
 
-          let body = `## Terraform Plan Analysis (${totalChanges} total changes via jq)\n\n`;
+          let body = `## Terraform Plan Parser Results (${totalChanges} total changes via jq)\n\n`;
 
           if (diffBool === 'true') {
             body += `✅ **Changes detected** affecting ${diffCount} resources:\n\n`;
@@ -188,9 +188,9 @@ jobs:
           body += `- **replace-bool**: \`${replaceBool}\`, **replace-count**: \`${replaceCount}\`, **replace-resources**: \`${JSON.stringify(replaceResources)}\`\n`;
           body += `- **Plan Summary**: ${diffJson.summary.toAdd} to add, ${diffJson.summary.toChange} to change, ${diffJson.summary.toDestroy} to destroy\n\n`;
 
-          // JSON structure analysis section
+          // JSON structure parse section
           if (diffBool === 'true') {
-            body += '### JSON Structure Analysis\n';
+            body += '### JSON Structure Parse\n';
             body += `**Plan Summary (jq parsed)**: Total ${totalChanges} changes - ${toAdd} to add, ${toChange} to change, ${toDestroy} to destroy\n\n`;
             body += `**Resource Count (jq parsed)**: ${resourceCount} resources affected\n\n`;
 
@@ -217,7 +217,7 @@ jobs:
           }
 
           // Detailed JSON structure
-          body += '### Detailed Analysis (JSON)\n';
+          body += '### Detailed Parse Result (JSON)\n';
           body += '```json\n';
           body += JSON.stringify(diffJson, null, 2);
           body += '\n```\n\n';

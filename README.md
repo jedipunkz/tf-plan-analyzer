@@ -54,7 +54,7 @@ ignore-resources: '["null_resource", "aws_s3_bucket.temp", "local_file"]'
 
 ### diff-json Structure
 
-The `diff-json` output provides a comprehensive, structured view of the Terraform plan analysis:
+The `diff-json` output provides a comprehensive, structured view of the Terraform plan parse result:
 
 ```json
 {
@@ -146,7 +146,7 @@ You can extract specific values from the JSON structure using `jq`:
 ### Advanced Usage with diff-json and PR Comments
 
 ```yaml
-name: Terraform Plan Analysis
+name: Terraform Plan Parser
 
 on:
   pull_request:
@@ -227,7 +227,7 @@ jobs:
             diffJson = { resources: [] };
           }
 
-          let body = `## Terraform Plan Analysis (${totalChanges} total changes via jq)\n\n`;
+          let body = `## Terraform Plan Parser Results (${totalChanges} total changes via jq)\n\n`;
 
           if (diffBool === 'true') {
             body += `✅ **Changes detected** affecting ${diffCount} resources:\n\n`;
