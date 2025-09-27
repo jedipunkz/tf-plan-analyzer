@@ -1,5 +1,7 @@
+import { TerraformAction } from './constants';
+
 export interface TerraformDiff {
-  action: 'create' | 'update' | 'delete' | 'replace' | 'no-op';
+  action: TerraformAction;
   resource: string;
   address: string;
   changes?: {
@@ -12,7 +14,7 @@ export interface TerraformDiff {
 export interface ResourceDiff {
   address: string;
   resourceType: string;
-  action: 'create' | 'update' | 'delete' | 'replace';
+  action: Exclude<TerraformAction, 'no-op'>;
   changes: {
     before: any;
     after: any;
